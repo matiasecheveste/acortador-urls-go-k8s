@@ -1,0 +1,18 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: acortador
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: acortar.example.uy
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: acortador
+                port:
+                  name: http

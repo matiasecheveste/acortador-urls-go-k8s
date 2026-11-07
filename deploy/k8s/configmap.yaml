@@ -1,0 +1,10 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: acortador
+data:
+  URL_PUBLICA: https://acortar.example.uy
+  REDIS_DIRECCION: redis:6379
+  CREACIONES_POR_SEGUNDO: "1"
+  RAFAGA: "10"

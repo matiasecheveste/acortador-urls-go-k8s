@@ -1,0 +1,88 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Formato
+        run: test -z "$(gofmt -l .)"
+      - run: go vet ./...
+      - run: go run honnef.co/go/tools/cmd/staticcheck@latest ./...
+      - run: go test -race -coverprofile=cobertura.out ./...
+      - run: go tool cover -func=cobertura.out | tail -1
+
+  manifiestos:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Validar manifiestos de Kubernetes
+        run: |
+          go install github.com/yannh/kubeconform/cmd/kubeconform@v0.8.0
+          kubectl kustomize deploy/k8s | "$(go env GOPATH)/bin/kubeconform" -strict -summary -kubernetes-version 1.34.0
+
+  extremo-a-extremo:
+    # Despliega en un clúster kind real y prueba el servicio a través del Service.
+    runs-on: ubuntu-latest
+    needs: [pruebas, manifiestos]
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t acortador:local .
+      - uses: helm/kind-action@v1
+      - run: kind load docker-image acortador:local --name chart-testing
+      - run: kubectl apply -k deploy/k8s
+      - name: Esperar el despliegue
+        run: |
+          kubectl -n acortador rollout status statefulset/redis --timeout=180s
+          kubectl -n acortador rollout status deployment/acortador --timeout=180s
+      - name: Crear un enlace y seguir la redirección
+        run: |
+          kubectl -n acortador port-forward svc/acortador 8080:80 & sleep 3
+          curl -fsS -X POST localhost:8080/api/enlaces -H 'Content-Type: application/json' \
+            -d '{"url":"https://www.gub.uy/tramites","alias":"prueba-e2e"}'
+          curl -si localhost:8080/prueba-e2e | tee respuesta.txt
+          grep -q '^HTTP/1.1 302' respuesta.txt
+          grep -qi '^location: https://www.gub.uy/tramites' respuesta.txt
+          kill %1
+      - name: El estado sobrevive al reinicio de las réplicas (vive en Redis)
+        run: |
+          kubectl -n acortador rollout restart deployment/acortador
+          kubectl -n acortador rollout status deployment/acortador --timeout=180s
+          kubectl -n acortador port-forward svc/acortador 8080:80 & sleep 3
+          curl -fsS localhost:8080/api/enlaces/prueba-e2e | tee estadisticas.json
+          grep -q '"visitas":1' estadisticas.json
+      - name: Diagnóstico
+        if: failure()
+        run: |
+          kubectl -n acortador get all
+          kubectl -n acortador describe pods
+          kubectl -n acortador logs -l app.kubernetes.io/name=acortador --tail=50
+
+  imagen:
+    runs-on: ubuntu-latest
+    needs: pruebas
+    if: github.ref == 'refs/heads/main'
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ghcr.io/${{ github.repository }}:${{ github.sha }}

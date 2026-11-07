@@ -1,0 +1,15 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+services:
+  acortador:
+    build: .
+    ports: ["8080:8080"]
+    environment:
+      URL_PUBLICA: http://localhost:8080
+      REDIS_DIRECCION: redis:6379
+    depends_on: [redis]
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes: ["datos:/data"]
+volumes:
+  datos:

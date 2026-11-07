@@ -1,0 +1,10 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: acortador
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: acortador

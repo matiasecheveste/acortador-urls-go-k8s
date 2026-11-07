@@ -1,0 +1,12 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+apiVersion: v1
+kind: Service
+metadata:
+  name: acortador
+spec:
+  selector:
+    app.kubernetes.io/name: acortador
+  ports:
+    - name: http
+      port: 80
+      targetPort: http

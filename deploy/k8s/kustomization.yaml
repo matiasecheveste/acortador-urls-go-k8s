@@ -1,0 +1,21 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: acortador
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: acortador
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - redis.yaml
+  - deployment.yaml
+  - service.yaml
+  - hpa.yaml
+  - pdb.yaml
+  - networkpolicy.yaml
+  - ingress.yaml
+images:
+  - name: acortador
+    newName: acortador
+    newTag: local

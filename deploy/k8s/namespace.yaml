@@ -1,0 +1,7 @@
+# Acortador de URLs — Matías Nicolás Echeveste Cardozo
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: acortador
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
