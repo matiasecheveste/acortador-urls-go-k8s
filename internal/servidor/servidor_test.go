@@ -81,6 +81,7 @@ func TestCodigosDeError(t *testing.T) {
 		{`{"url": "ftp://x.uy"}`, http.StatusUnprocessableEntity},
 		{`{"url": "https://x.uy", "extra": 1}`, http.StatusBadRequest},
 		{`no es json`, http.StatusBadRequest},
+		{`{"url": "https://x.uy/` + strings.Repeat("a", 5000) + `"}`, http.StatusRequestEntityTooLarge},
 		{`{"url": "https://x.uy", "alias": "repetido"}`, http.StatusCreated},
 		{`{"url": "https://y.uy", "alias": "repetido"}`, http.StatusConflict},
 		{`{"url": "https://x.uy", "vigenciaHoras": 9999}`, http.StatusUnprocessableEntity},

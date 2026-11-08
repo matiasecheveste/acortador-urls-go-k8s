@@ -95,6 +95,11 @@ func (s *Servidor) crear(w http.ResponseWriter, r *http.Request) {
 	decodificador := json.NewDecoder(r.Body)
 	decodificador.DisallowUnknownFields()
 	if err := decodificador.Decode(&cuerpo); err != nil {
+		var demasiado *http.MaxBytesError
+		if errors.As(err, &demasiado) {
+			s.error(w, http.StatusRequestEntityTooLarge, "el cuerpo del pedido es demasiado grande")
+			return
+		}
 		s.error(w, http.StatusBadRequest, "JSON inválido")
 		return
 	}

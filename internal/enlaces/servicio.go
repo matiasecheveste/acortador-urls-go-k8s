@@ -115,8 +115,11 @@ func (s *Servicio) Crear(ctx context.Context, p Pedido) (almacen.Enlace, error) 
 	}
 
 	if p.Alias != "" {
-		if !aliasValido.MatchString(p.Alias) || reservados[strings.ToLower(p.Alias)] {
+		if !aliasValido.MatchString(p.Alias) {
 			return almacen.Enlace{}, invalido("el alias debe tener de 3 a 32 letras, números, guiones o guiones bajos")
+		}
+		if reservados[strings.ToLower(p.Alias)] {
+			return almacen.Enlace{}, invalido("el alias está reservado por la aplicación")
 		}
 		e.Codigo = p.Alias
 		return e, s.almacen.Guardar(ctx, e)
